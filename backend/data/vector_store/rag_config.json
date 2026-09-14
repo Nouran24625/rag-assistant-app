@@ -1,0 +1,12 @@
+{
+  "embedding_model": "all-MiniLM-L6-v2",
+  "collection_name": "fastapi_docs",
+  "vector_store_path": "/Users/noura/rag-assistant-project/backend/data/vector_store",
+  "chunk_size": 800,
+  "chunk_overlap": 150,
+  "top_k": 5,
+  "llm_model": "llama3.2:1b",
+  "hnsw_space": "cosine",
+  "total_chunks": 812,
+  "exported_at": "2026-09-13T21:52:49.250122"
+}

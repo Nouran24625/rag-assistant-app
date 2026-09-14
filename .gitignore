@@ -1,0 +1,29 @@
+# Python & Environment
+.venv/
+env/
+venv/
+ENV/
+__pycache__/
+*.py[cod]
+*$py.class
+*.log
+
+# Environment variables
+.env
+frontend/.env
+backend/.env
+
+# Local data / raw documents (obtain via git clone as explained in README)
+data/raw/
+backend/data/raw/
+
+# Jupyter & testing
+.ipynb_checkpoints/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Operating System files
+.DS_Store
+Thumbs.db
+data/vector_store/
