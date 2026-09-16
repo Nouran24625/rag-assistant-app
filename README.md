@@ -181,25 +181,10 @@ curl -X POST http://127.0.0.1:8000/query   -H "Content-Type: application/json"  
 `````
 
 **Response (`200 OK`):**
-`````json
+```json
 {
-  "answer": "You can declare a request body with Pydantic by using the `Body` parameter in your function parameters. For example:
-````python
-from pydantic import BaseModel
-
-class Item(BaseModel):
-    name: str
-    price: float
-
-@app.post('/items/')
-async def create_item(item: Item):
-    return item
-```",
-  "sources": [
-    "body.md",
-    "body-fields.md",
-    "path-operation-advanced-configuration.md"
-  ]
+  "answer": "You can declare a request body with Pydantic by using the `Body` parameter in your function parameters. For example:\n\n```python\nfrom pydantic import BaseModel\n\nclass Item(BaseModel):\n    name: str\n    price: float\n\n@app.post('/items/')\nasync def create_item(item: Item):\n    return item\n```",
+  "sources": ["body.md", "body-fields.md", "path-operation-advanced-configuration.md"]
 }
 ```
 
@@ -290,4 +275,3 @@ is retrieval quality for multi-file security topics, not generation quality alon
 **After — `llama3.2` 3B (correct, working code):**
 ![CORS answer with 3B model](screenshots/Q10_cors_AFTER_3b.png)
 ![CORS code with 3B model](screenshots/Q10_cors_AFTER_3b_code.png)
-````
