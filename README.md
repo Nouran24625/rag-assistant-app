@@ -8,7 +8,7 @@ An end-to-end, local Retrieval-Augmented Generation (RAG) assistant specifically
 
 The system consists of an offline indexing and evaluation pipeline in Jupyter, a high-performance **FastAPI** backend service utilizing **ChromaDB**, and an interactive **Streamlit** chat interface.
 
-```mermaid
+`````mermaid
 flowchart TD
     subgraph Ingestion["Offline Pipeline (Jupyter Notebook)"]
         RawDocs["FastAPI Raw Docs<br/>(69 .md files)"] --> Chunking["Header-Aware<br/>Semantic Chunking<br/>(812 chunks)"]
@@ -26,7 +26,7 @@ flowchart TD
         APIQuery["POST /query"] --> RetrievalService
         RetrievalService --> PromptBuilder["Grounded Context Prompt"]
         PromptBuilder --> GenerationService
-        GenerationService --> OllamaLLM["Ollama Engine<br/>llama3.2:1b"]
+        GenerationService --> OllamaLLM["Ollama Engine<br/>llama3.2"]
         OllamaLLM --> QueryResponse["QueryResponse<br/>{answer, sources}"]
         
         APIHealth["GET /health"] --> HealthCheck["Vector Store & LLM Status"]
@@ -38,13 +38,13 @@ flowchart TD
         APIClient -->|"HTTP Requests"| APIQuery
         QueryResponse -->|"Answer + Cited Files"| StreamlitApp
     end
-```
+`````
 
 ---
 
 ## 💻 Tech Stack
 
-- **Large Language Model**: [Ollama](https://ollama.com/) running `llama3.2:1b` locally.
+- **Large Language Model**: [Ollama](https://ollama.com/) running `llama3.2` (3B) locally.
 - **Embedding Model**: `sentence-transformers/all-MiniLM-L6-v2` (384-dimensional dense vectors).
 - **Vector Database**: [ChromaDB](https://www.trychroma.com/) (`PersistentClient` with cosine similarity index).
 - **Backend**: [FastAPI](https://fastapi.tiangolo.com/), [Uvicorn](https://www.uvicorn.org/), [Pydantic v2](https://docs.pydantic.dev/), `pydantic-settings`.
@@ -56,7 +56,7 @@ flowchart TD
 
 ## 📂 Project Structure
 
-```text
+`````text
 rag-assistant-project/
 ├── .gitignore
 ├── README.md
@@ -93,7 +93,7 @@ rag-assistant-project/
     ├── .env                            # Frontend environment configuration
     ├── api_client.py                   # Backend client with error handling & health check
     └── app.py                          # Streamlit chat interface with expandable citations
-```
+`````
 
 ---
 
@@ -108,7 +108,7 @@ The knowledge base is built from the official **FastAPI** documentation (`tutori
 
 ### Obtaining the Raw Data
 The `data/raw/` folder is excluded from version control. You can obtain or reconstruct it by cloning the official FastAPI documentation repository:
-```bash
+`````bash
 # Clone the FastAPI repository shallowly
 git clone --depth 1 https://github.com/fastapi/fastapi.git /tmp/fastapi
 
@@ -117,7 +117,7 @@ mkdir -p data/raw
 cp -r /tmp/fastapi/docs/en/docs/tutorial/* data/raw/
 cp -r /tmp/fastapi/docs/en/docs/advanced/* data/raw/
 rm -rf /tmp/fastapi
-```
+`````
 
 ---
 
@@ -126,33 +126,33 @@ rm -rf /tmp/fastapi
 ### 1. Prerequisites
 - Python 3.11+
 - [Ollama](https://ollama.com/) installed and running:
-  ```bash
-  ollama run llama3.2:1b
-  ```
+`````bash
+  ollama run llama3.2
+`````
 
 ### 2. Virtual Environment Setup
-```bash
+`````bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r backend/requirements.txt
 pip install -r frontend/requirements.txt
-```
+`````
 
 ### 3. Running the Backend
 From the project root:
-```bash
+`````bash
 cd backend
 uvicorn app.main:app --reload --port 8000
-```
+`````
 - API Documentation (Swagger UI): [http://localhost:8000/docs](http://localhost:8000/docs)
 - Health Status: [http://localhost:8000/health](http://localhost:8000/health)
 
 ### 4. Running the Frontend
 In a separate terminal window:
-```bash
+`````bash
 cd frontend
 streamlit run app.py --server.port 8501
-```
+`````
 - Open [http://localhost:8501](http://localhost:8501) in your browser.
 
 ---
@@ -176,15 +176,15 @@ streamlit run app.py --server.port 8501
 Performs semantic vector search and generates a grounded response.
 
 **Request:**
-```bash
+`````bash
 curl -X POST http://127.0.0.1:8000/query   -H "Content-Type: application/json"   -d '{"question": "How do I declare a request body with Pydantic?"}'
-```
+`````
 
 **Response (`200 OK`):**
-```json
+`````json
 {
   "answer": "You can declare a request body with Pydantic by using the `Body` parameter in your function parameters. For example:
-```python
+````python
 from pydantic import BaseModel
 
 class Item(BaseModel):
@@ -227,16 +227,26 @@ Tests include:
 
 ## 📊 Evaluation & Failure Case Analysis (Section 2.6)
 
-An evaluation of 12 representative FastAPI questions was conducted using `llama3.2:1b` with `top_k=5` cosine retrieval from the persisted Chroma store:
+### Model Comparison: Before & After
 
-| Verdict | Count | Percentage | Observations |
+An evaluation of the same 12 representative FastAPI questions was conducted twice, using `top_k=5`
+cosine retrieval from the persisted Chroma store, once with each model:
+
+| | Correct | Partial | Incorrect |
 |---|---|---|---|
-| **✅ Correct** | **1** | 8.3% | Basic query parameter defaults. |
-| **⚠️ Partial** | **4** | 33.3% | Core concepts mentioned, but subtle syntax constraints missed. |
-| **❌ Incorrect** | **7** | 58.3% | Fabricated non-existent APIs and syntax errors. |
+| **llama3.2:1b** (original) | 1 (8.3%) | 4 (33.3%) | 7 (58.3%) |
+| **llama3.2** (3B, upgraded) | 1 (8.3%) | 6 (50.0%) | 5 (41.7%) |
+
+Upgrading from the 1B to the 3B model reduced full hallucinations from 7 to 5 questions out of 12.
+The most visible improvement was on the CORS middleware question: the 1B model generated broken
+code that called `CORSMiddleware(...)` directly as a standalone function, while the 3B model
+correctly describes and demonstrates the real `app.add_middleware()` pattern (see screenshots
+below). Two additional questions shifted from Incorrect to Partial, reflecting better baseline
+instruction-following at the larger scale.
 
 ### Documented Hallucination Patterns
-In 6 of the 12 evaluation answers, `llama3.2:1b` fabricated APIs that do not exist in FastAPI:
+
+**With `llama3.2:1b`**, 6 of 12 answers fabricated APIs that do not exist in FastAPI:
 - **`@jwt_required()`**: Fabricated decorator claimed to be from `fastapi.security` (Q8).
 - **`include_router` keyword argument**: Invented keyword parameter passed into `router.get("/", include_router=...)` (Q11).
 - **`CORSMiddleware(...)`**: Called directly as a standalone function without `app.add_middleware(...)` (Q10).
@@ -244,20 +254,40 @@ In 6 of the 12 evaluation answers, `llama3.2:1b` fabricated APIs that do not exi
 - **`in_memory=True` flag**: Invented flag on `UploadFile` (Q7).
 - **`Body(in=...)`**: Invented parameter syntax on `Body` (Q1).
 
+**With `llama3.2` (3B)**, the CORS fabrication (Q10) was fixed, but the OAuth2/JWT fabrication (Q8)
+persisted unchanged — `@jwt_required()` was still invented even with the larger model. This is a
+meaningful signal: a bigger model alone did not fix this specific failure, suggesting the bottleneck
+is retrieval quality for multi-file security topics, not generation quality alone.
+
 ### Recommended Mitigations
-1. **Model Upgrade**: Upgrade from `llama3.2:1b` to `llama3.2` (3B) or `llama3.1:8b` for significantly better adherence to provided context.
-2. **Deterministic Sampling**: Set `temperature=0.0` or `0.05` to curb speculative token hallucination.
-3. **AST Symbol Verifier**: Integrate a post-generation checker that parses Python code blocks and flags any imported symbols not present in retrieved context.
-4. **Enhanced Retrieval Context**: Expand `top_k` (from 5 to 8) and add a cross-encoder reranker for multi-document concepts like OAuth2 and Starlette middleware.
+
+**Already implemented:**
+1. ✅ **Model Upgrade**: Upgraded from `llama3.2:1b` to `llama3.2` (3B) — reduced incorrect answers from 7 to 5, and fixed the CORS hallucination specifically.
+
+**Still recommended:**
+2. **Enhanced Retrieval Context**: Expand `top_k` (from 5 to 8) and add a cross-encoder reranker for multi-document concepts like OAuth2 and Starlette middleware — likely the next highest-value fix, since it targets the OAuth2/JWT failure that model upgrading alone didn't resolve.
+3. **Deterministic Sampling**: Set `temperature=0.0` or `0.05` to curb any remaining speculative token hallucination.
+4. **AST Symbol Verifier**: Integrate a post-generation checker that parses Python code blocks and flags any imported symbols not present in retrieved context.
 
 ---
 
 ## 📸 Screenshots & Demonstrations
-## 1. Interactive Streamlit Chat Interface
-![Chat Interface](screenshots/interface.png)
 
-## 2. FastAPI Swagger UI Documentation (/docs)
-![Swagger UI](screenshots/Q1_1.png)
+### 1. Interactive Streamlit Chat Interface
+![Chat Interface](screenshots/interface_3b.png)
+![Backend Status](screenshots/backend_status_3b.png)
 
-## 3. Pipeline Evaluation & Vector Store Execution (Notebook)
-![Notebook Evaluation](screenshots/Q3_3.png)
+### 2. Example Answers (llama3.2, 3B)
+![Pydantic request body example](screenshots/Q1_pydantic_3b.png)
+![Query parameter default example](screenshots/Q3_query_param_3b.png)
+
+### 3. Model Upgrade: Before & After — CORS Middleware Question
+
+**Before — `llama3.2:1b` (broken code, missing `add_middleware` call):**
+![CORS answer with 1B model](screenshots/Q10_cors_BEFORE_1b.png)
+![CORS code with 1B model](screenshots/Q10_cors_BEFORE_1b_code.png)
+
+**After — `llama3.2` 3B (correct, working code):**
+![CORS answer with 3B model](screenshots/Q10_cors_AFTER_3b.png)
+![CORS code with 3B model](screenshots/Q10_cors_AFTER_3b_code.png)
+````
